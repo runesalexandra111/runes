@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Выберите 3 руны</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-image: url('card/phone.jpg'); /* Путь к вашему фоновому изображению */
+            background-size: cover;
+            background-position: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #fff;
+        }
+
+        .container {
+            text-align: center;
+            /* background: rgba(0, 0, 0, 0.7); Полупрозрачный фон для контента */
+            
+            
+            /* border: 0.5px solid #d4af37; Золотая рамка */
+        }
+
+        .cards-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 20px;
+            perspective: 1000px;
+        }
+
+        .selected-cards-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            min-height: 170px; /* высота для отображения перемещаемых карт */
+        }
+
+        .card {
+            width: 70px;
+            height: 130px;
+            margin: 10px;
+            background-image: url('card/back.jpg'); /* Указываем путь к изображению рубашки карты */
+            background-size: contain; /* Изменено на contain для лучшего вида */
+            background-repeat: no-repeat; /* Добавлено для предотвращения повторения */
+            background-position: center; /* Добавлено для центрирования */
+            cursor: pointer;
+            transition: transform 0.8s, left 0.9s, top 0.8s, opacity 0.8s;
+            transform-style: preserve-3d;
+            position: relative;
+            
+        }
+
+        .card.flip {
+            transform: rotateY(180deg) scaleX(-1); /* Добавлен scaleX(1) для предотвращения зеркального отражения */
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .grouped {
+            position: relative;
+            left: 0;
+            top: 0;
+            margin: 10px;
+            transition: transform 0.6s, opacity 0.6s;
+        }
+
+        #continueButton {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #3a3936; /* Золотая кнопка */
+            color: rgb(243, 241, 241); /* Черный текст на кнопке */
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.6s, opacity 0.6s;
+            opacity: 0;
+            margin-top: 20px; /* Отступ сверху для кнопки */
+        }
+
+        #continueButton.visible {
+            opacity: 1;
+        }
+
+        #continueButton:hover {
+            background-color: #b5933a; /* Темнее золотой при наведении */
+        }
+
+        #chooseCardsTitle {
+            transition: opacity 0.3s;
+            font-size: 24px;
+            margin-bottom: 20px;
+            
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: #ffffff; /* Цвет обводки */
+            text-shadow: 1px 1px 1px rgb(255, 255, 255);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 id="chooseCardsTitle">Выберите 3 руны</h1>
+        <div class="cards-container">
+            <!-- Карты будут добавлены сюда через JavaScript -->
+        </div>
+        <div class="selected-cards-container">
+            <!-- Выбранные карты будут перемещены сюда -->
+        </div>
+        <button id="continueButton" class="hidden">Продолжить</button>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Расширяем WebApp на весь экран
+            Telegram.WebApp.expand();
+
+            // Создаем массив путей к изображениям карт
+            const cardImages = Array.from({length: 35}, (_, i) => `card/card${i + 1}.jpg`);
+            const selectedCards = [];
+            const cardsContainer = document.querySelector('.cards-container');
+            const selectedCardsContainer = document.querySelector('.selected-cards-container');
+            const continueButton = document.getElementById('continueButton');
+            const chooseCardsTitle = document.getElementById('chooseCardsTitle');
+
+            // Выбираем 7 случайных карт
+            const shuffledCards = cardImages.sort(() => 0.5 - Math.random());
+            const displayedCards = shuffledCards.slice(0, 6);
+
+            // Функция предварительной загрузки изображений
+            function preloadImages(srcArray) {
+                srcArray.forEach(src => {
+                    const img = new Image();
+                    img.src = src;
+                });
+            }
+
+            // Предварительная загрузка выбранных 7 случайных карт
+            preloadImages(displayedCards);
+
+            // Отображаем карты
+            displayedCards.forEach((src, index) => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.dataset.src = src;
+                card.dataset.index = index;
+                card.addEventListener('click', onCardClick);
+                cardsContainer.appendChild(card);
+            });
+
+            function onCardClick(e) {
+                const card = e.target;
+                if (selectedCards.length < 3 && !card.classList.contains('selected')) {
+                    card.classList.add('flip');
+                    setTimeout(() => {
+                        card.style.backgroundImage = `url(${card.dataset.src})`;
+                        card.classList.add('selected');
+                        selectedCards.push(card.dataset.src);
+                        if (selectedCards.length === 3) {
+                            setTimeout(groupSelectedCards, 600);
+                        }
+                    }, 230); // Задержка для плавного переворота
+                }
+            }
+
+            function groupSelectedCards() {
+                document.querySelectorAll('.card').forEach(card => {
+                    if (!card.classList.contains('selected')) {
+                        card.classList.add('hidden');
+                    } else {
+                        selectedCardsContainer.appendChild(card);
+                        card.classList.add('grouped');
+                    }
+                });
+                chooseCardsTitle.style.opacity = '0'; // Скрываем заголовок
+                setTimeout(() => {
+                    chooseCardsTitle.classList.add('hidden');
+                    continueButton.classList.remove('hidden');
+                    continueButton.classList.add('visible'); // Плавное появление кнопки
+                }, 500); // Задержка для плавного исчезновения заголовка
+            }
+
+            continueButton.addEventListener('click', () => {
+                // Отправляем выбранные карты в Telegram
+                Telegram.WebApp.sendData(JSON.stringify(selectedCards));
+                Telegram.WebApp.close();
+            });
+        });
+    </script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</body>
+</html>
